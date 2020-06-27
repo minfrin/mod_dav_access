@@ -20,10 +20,12 @@
  *
  *  Author: Graham Leggett
  *
+ * DavAccessPrincipalUrl /dav/principals/%{escape:%{REMOTE_USER}}
+ *
  */
 #include <apr_lib.h>
-#include <apr_escape.h>
 #include <apr_strings.h>
+#include <apr_escape.h>
 
 #include "ap_expr.h"
 
@@ -176,9 +178,9 @@ static const char *dav_access_principal(request_rec *r)
                                                 &dav_access_module);
 
     if (r->user && conf->principal_url) {
-        const char *err = NULL, *prefix, *suffix;
+        const char *err = NULL, *url;
 
-    	prefix = ap_expr_str_exec(r, conf->principal_url, &err);
+    	url = ap_expr_str_exec(r, conf->principal_url, &err);
         if (err) {
             ap_log_rerror(APLOG_MARK, APLOG_WARNING, 0, r,
                             "Failure while evaluating the principal URL expression for '%s', "
@@ -186,12 +188,17 @@ static const char *dav_access_principal(request_rec *r)
             return NULL;
         }
 
-        suffix = apr_pescape_path_segment(r->pool, r->user);
-
-        return apr_pstrcat(r->pool, prefix, "/", suffix, NULL);
+        return url;
     }
 
     return NULL;
+}
+
+static const char *dav_access_current_user_privilege_set(const dav_resource *resource)
+{
+	/* for now, people are allowed */
+	return "<D:privilege><D:read/></D:privilege><D:privilege><D:write/></D:privilege><D:privilege><D:bind/></D:privilege><D:privilege><D:unbind/></D:privilege>";
+
 }
 
 static const char *dav_access_resource_principal(const dav_resource *resource)
@@ -215,9 +222,15 @@ static dav_prop_insert dav_access_insert_prop(const dav_resource *resource,
 
         value = dav_access_resource_principal(resource);
         if (value)
-            value = apr_psprintf(p, "<D:href>%s</D:href>", value);
+            value = apr_psprintf(p, "<D:href>%s</D:href>",
+            		apr_pescape_entity(p, value, 1));
         else
             value = "<D:unauthenticated/>";
+        break;
+
+    case DAV_ACCESS_PROPID_current_user_privilege_set:
+
+        value = dav_access_current_user_privilege_set(resource);
         break;
 
     default:
@@ -373,7 +386,7 @@ static const char *set_dav_principal_url(cmd_parms *cmd, void *dconf, const char
 static const command_rec dav_access_cmds[] =
 {
     AP_INIT_TAKE1("DavAccessPrincipalUrl", set_dav_principal_url, NULL, RSRC_CONF | ACCESS_CONF,
-        "Set the URL template to use for the principal URL."),
+        "Set the URL template to use for the principal URL. Recommended value is \"/principals/%{escape:%{REMOTE_USER}}\"."),
     { NULL }
 };
 

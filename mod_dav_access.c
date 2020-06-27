@@ -86,79 +86,79 @@ static const dav_liveprop_spec dav_access_props[] =
     {
         DAV_ACCESS_URI_DAV,
         "acl",
-		DAV_ACCESS_PROPID_acl,
+        DAV_ACCESS_PROPID_acl,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "acl-restrictions",
-		DAV_ACCESS_PROPID_acl_restrictions,
+        DAV_ACCESS_PROPID_acl_restrictions,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "alternate-uri-set",
-		DAV_ACCESS_PROPID_alternate_uri_set,
+        DAV_ACCESS_PROPID_alternate_uri_set,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "current-user-principal",
-		DAV_ACCESS_PROPID_current_user_principal,
+        DAV_ACCESS_PROPID_current_user_principal,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "current-user-privilege-set",
-		DAV_ACCESS_PROPID_current_user_privilege_set,
+        DAV_ACCESS_PROPID_current_user_privilege_set,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "group",
-		DAV_ACCESS_PROPID_group,
+        DAV_ACCESS_PROPID_group,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "group-membership",
-		DAV_ACCESS_PROPID_group_membership,
+        DAV_ACCESS_PROPID_group_membership,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "group-member-set",
-		DAV_ACCESS_PROPID_group_member_set,
+        DAV_ACCESS_PROPID_group_member_set,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "inherited-acl-set",
-		DAV_ACCESS_PROPID_inherited_acl_set,
+        DAV_ACCESS_PROPID_inherited_acl_set,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "owner",
-		DAV_ACCESS_PROPID_owner,
+        DAV_ACCESS_PROPID_owner,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "principal-collection-set",
-		DAV_ACCESS_PROPID_principal_collection_set,
+        DAV_ACCESS_PROPID_principal_collection_set,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "principal-url",
-		DAV_ACCESS_PROPID_principal_url,
+        DAV_ACCESS_PROPID_principal_url,
         0
     },
     {
         DAV_ACCESS_URI_DAV,
         "supported-privilege-set",
-		DAV_ACCESS_PROPID_supported_privilege_set,
+        DAV_ACCESS_PROPID_supported_privilege_set,
         0
     },
 
@@ -168,7 +168,7 @@ static const dav_liveprop_spec dav_access_props[] =
 static const dav_liveprop_group dav_access_liveprop_group =
 {
     dav_access_props,
-	dav_access_namespace_uris,
+    dav_access_namespace_uris,
     &dav_hooks_liveprop_access
 };
 
@@ -180,7 +180,7 @@ static const char *dav_access_principal(request_rec *r)
     if (r->user && conf->principal_url) {
         const char *err = NULL, *url;
 
-    	url = ap_expr_str_exec(r, conf->principal_url, &err);
+        url = ap_expr_str_exec(r, conf->principal_url, &err);
         if (err) {
             ap_log_rerror(APLOG_MARK, APLOG_WARNING, 0, r,
                             "Failure while evaluating the principal URL expression for '%s', "
@@ -196,8 +196,8 @@ static const char *dav_access_principal(request_rec *r)
 
 static const char *dav_access_current_user_privilege_set(const dav_resource *resource)
 {
-	/* for now, people are allowed */
-	return "<D:privilege><D:read/></D:privilege><D:privilege><D:write/></D:privilege><D:privilege><D:bind/></D:privilege><D:privilege><D:unbind/></D:privilege>";
+    /* for now, people are allowed */
+    return "<D:privilege><D:read/></D:privilege><D:privilege><D:write/></D:privilege><D:privilege><D:bind/></D:privilege><D:privilege><D:unbind/></D:privilege>";
 
 }
 
@@ -209,7 +209,7 @@ static const char *dav_access_resource_principal(const dav_resource *resource)
 }
 
 static dav_prop_insert dav_access_insert_prop(const dav_resource *resource,
-		int propid, dav_prop_insert what, apr_text_header *phdr)
+        int propid, dav_prop_insert what, apr_text_header *phdr)
 {
     const char *value;
     const char *s;
@@ -223,7 +223,7 @@ static dav_prop_insert dav_access_insert_prop(const dav_resource *resource,
         value = dav_access_resource_principal(resource);
         if (value)
             value = apr_psprintf(p, "<D:href>%s</D:href>",
-            		apr_pescape_entity(p, value, 1));
+                    apr_pescape_entity(p, value, 1));
         else
             value = "<D:unauthenticated/>";
         break;
@@ -321,7 +321,7 @@ static int dav_access_find_liveprop(const dav_resource *resource,
 }
 
 static dav_error *dav_access_options_header(request_rec *r,
-		const dav_resource *resource, apr_text_header *phdr)
+        const dav_resource *resource, apr_text_header *phdr)
 {
     apr_text_append(r->pool, phdr, "access-control");
 
@@ -329,7 +329,7 @@ static dav_error *dav_access_options_header(request_rec *r,
 }
 
 static dav_error *dav_access_options_method(request_rec *r,
-		const dav_resource *resource, apr_text_header *phdr)
+        const dav_resource *resource, apr_text_header *phdr)
 {
 //    apr_text_append(r->pool, phdr, "ACL");
 //    apr_text_append(r->pool, phdr, "REPORT");
@@ -346,17 +346,17 @@ static dav_options_provider options =
 
 static void *create_dav_access_dir_config(apr_pool_t *p, char *d)
 {
-	dav_calendar_config_rec *conf = apr_pcalloc(p, sizeof(dav_calendar_config_rec));
+    dav_calendar_config_rec *conf = apr_pcalloc(p, sizeof(dav_calendar_config_rec));
 
     return conf;
 }
 
 static void *merge_dav_access_dir_config(apr_pool_t *p, void *basev, void *addv)
 {
-	dav_calendar_config_rec *new = (dav_calendar_config_rec *) apr_pcalloc(p,
+    dav_calendar_config_rec *new = (dav_calendar_config_rec *) apr_pcalloc(p,
             sizeof(dav_calendar_config_rec));
-	dav_calendar_config_rec *add = (dav_calendar_config_rec *) addv;
-	dav_calendar_config_rec *base = (dav_calendar_config_rec *) basev;
+    dav_calendar_config_rec *add = (dav_calendar_config_rec *) addv;
+    dav_calendar_config_rec *base = (dav_calendar_config_rec *) basev;
 
     new->principal_url = (add->principal_url_set == 0) ? base->principal_url : add->principal_url;
     new->principal_url_set = add->principal_url_set || base->principal_url_set;
@@ -393,7 +393,7 @@ static const command_rec dav_access_cmds[] =
 static int dav_access_handler(request_rec *r)
 {
 
-	dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
             &dav_access_module);
 
     return DECLINED;

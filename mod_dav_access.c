@@ -323,7 +323,12 @@ static int dav_access_find_liveprop(const dav_resource *resource,
 static dav_error *dav_access_options_header(request_rec *r,
         const dav_resource *resource, apr_text_header *phdr)
 {
-    apr_text_append(r->pool, phdr, "access-control");
+    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+            &dav_access_module);
+
+    if (conf && conf->principal_url) {
+        apr_text_append(r->pool, phdr, "access-control");
+    }
 
     return NULL;
 }
@@ -331,8 +336,13 @@ static dav_error *dav_access_options_header(request_rec *r,
 static dav_error *dav_access_options_method(request_rec *r,
         const dav_resource *resource, apr_text_header *phdr)
 {
-//    apr_text_append(r->pool, phdr, "ACL");
-//    apr_text_append(r->pool, phdr, "REPORT");
+    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+            &dav_access_module);
+
+    if (conf && conf->principal_url) {
+        // apr_text_append(r->pool, phdr, "ACL");
+        // apr_text_append(r->pool, phdr, "REPORT");
+    }
 
     return NULL;
 }

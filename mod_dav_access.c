@@ -45,7 +45,7 @@ typedef struct
 {
     int principal_url_set :1;
     ap_expr_info_t *principal_url;
-} dav_calendar_config_rec;
+} dav_access_config_rec;
 
 /* forward-declare the hook structures */
 static const dav_hooks_liveprop dav_hooks_liveprop_access;
@@ -174,7 +174,7 @@ static const dav_liveprop_group dav_access_liveprop_group =
 
 static const char *dav_access_principal(request_rec *r)
 {
-    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+    dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
                                                 &dav_access_module);
 
     if (r->user && conf->principal_url) {
@@ -323,7 +323,7 @@ static int dav_access_find_liveprop(const dav_resource *resource,
 static dav_error *dav_access_options_header(request_rec *r,
         const dav_resource *resource, apr_text_header *phdr)
 {
-    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+    dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
             &dav_access_module);
 
     if (conf && conf->principal_url) {
@@ -336,7 +336,7 @@ static dav_error *dav_access_options_header(request_rec *r,
 static dav_error *dav_access_options_method(request_rec *r,
         const dav_resource *resource, apr_text_header *phdr)
 {
-    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+    dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
             &dav_access_module);
 
     if (conf && conf->principal_url) {
@@ -356,17 +356,17 @@ static dav_options_provider options =
 
 static void *create_dav_access_dir_config(apr_pool_t *p, char *d)
 {
-    dav_calendar_config_rec *conf = apr_pcalloc(p, sizeof(dav_calendar_config_rec));
+    dav_access_config_rec *conf = apr_pcalloc(p, sizeof(dav_access_config_rec));
 
     return conf;
 }
 
 static void *merge_dav_access_dir_config(apr_pool_t *p, void *basev, void *addv)
 {
-    dav_calendar_config_rec *new = (dav_calendar_config_rec *) apr_pcalloc(p,
-            sizeof(dav_calendar_config_rec));
-    dav_calendar_config_rec *add = (dav_calendar_config_rec *) addv;
-    dav_calendar_config_rec *base = (dav_calendar_config_rec *) basev;
+    dav_access_config_rec *new = (dav_access_config_rec *) apr_pcalloc(p,
+            sizeof(dav_access_config_rec));
+    dav_access_config_rec *add = (dav_access_config_rec *) addv;
+    dav_access_config_rec *base = (dav_access_config_rec *) basev;
 
     new->principal_url = (add->principal_url_set == 0) ? base->principal_url : add->principal_url;
     new->principal_url_set = add->principal_url_set || base->principal_url_set;
@@ -376,7 +376,7 @@ static void *merge_dav_access_dir_config(apr_pool_t *p, void *basev, void *addv)
 
 static const char *set_dav_principal_url(cmd_parms *cmd, void *dconf, const char *url)
 {
-    dav_calendar_config_rec *conf = dconf;
+    dav_access_config_rec *conf = dconf;
     const char *expr_err = NULL;
 
     conf->principal_url = ap_expr_parse_cmd(cmd, url, AP_EXPR_FLAG_STRING_RESULT,
@@ -403,7 +403,7 @@ static const command_rec dav_access_cmds[] =
 static int dav_access_handler(request_rec *r)
 {
 
-    dav_calendar_config_rec *conf = ap_get_module_config(r->per_dir_config,
+    dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
             &dav_access_module);
 
     return DECLINED;

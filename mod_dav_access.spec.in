@@ -8,14 +8,8 @@ License:   ASL 2.0
 Group:     System Environment/Daemons
 Source:    https://github.com/minfrin/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
 Url:       https://github.com/minfrin/%{name}
-BuildRequires: gcc, pkgconfig(apr-1), pkgconfig(apr-util-1), pkgconfig(libical)
-Requires:  httpd
-
-%if 0%{?is_opensuse}
-%define moduledir %{_libdir}/apache2
-%else
-%define moduledir %{_libdir}/httpd/modules
-%endif
+BuildRequires: gcc, pkgconfig(apr-1), pkgconfig(apr-util-1), (httpd-devel or apache-devel or apache2-devel)
+Requires: (httpd or apache or apache2)
 
 %description
 Apache module to implement RFC3744 WebDav Access Control Protocol.
@@ -30,6 +24,9 @@ Apache module to implement RFC3744 WebDav Access Control Protocol.
 %make_install
 
 %files
-%{moduledir}/%{name}.so
-
+%if 0%{?sle_version} || 0%{?is_opensuse}
+%{_libdir}/apache2/%{name}.so
+%else
+%{_libdir}/httpd/modules/%{name}.so
+%endif
 

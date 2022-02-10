@@ -403,11 +403,7 @@ static const command_rec dav_access_cmds[] =
 static int dav_access_handler(request_rec *r)
 {
 
-    dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
-            &dav_access_module);
-
     return DECLINED;
-
 }
 
 static void register_hooks(apr_pool_t *p)

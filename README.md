@@ -13,8 +13,10 @@ Requires Apache httpd v2.4.52 or higher.
 RPM Packages are available at
 [COPR](https://copr.fedorainfracloud.org/coprs/minfrin/mod_dav_access/) for EPEL, Fedora and OpenSUSE.
 
+```
 dnf copr enable minfrin/mod_dav_access
 dnf install mod_dav_access
+```
 
 # quick configuration
 

@@ -30,3 +30,9 @@ Apache module to implement RFC3744 WebDav Access Control Protocol.
 %{_libdir}/httpd/modules/%{name}.so
 %endif
 
+%doc AUTHORS ChangeLog README.md
+
+%changelog
+* Mon Feb 14 2022 Graham Leggett <minfrin@sharp.fm> - 0.1.0-1
+- Initial version of the package
+

@@ -1,4 +1,4 @@
-EXTRA_DIST = mod_dav_access.c mod_dav_access.spec
+EXTRA_DIST = mod_dav_access.c mod_dav_access.spec README.md
 
 all-local:
 	$(APXS) "-Wc,${CFLAGS}" -c $(DEF_LDLIBS) $(AM_CFLAGS) $(AM_LDFLAGS) @srcdir@/mod_dav_access.c

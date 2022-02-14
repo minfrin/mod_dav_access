@@ -8,6 +8,14 @@ can be used to provide ACLs where needed, such as for a CalDAV server.
 
 Requires Apache httpd v2.4.52 or higher.
 
+# download
+
+RPM Packages are available at
+[COPR](https://copr.fedorainfracloud.org/coprs/minfrin/mod_dav_access/) for EPEL, Fedora and OpenSUSE.
+
+dnf copr enable minfrin/mod_dav_access
+dnf install mod_dav_access
+
 # quick configuration
 
     <Location /principal>

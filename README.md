@@ -18,6 +18,9 @@ dnf copr enable minfrin/mod_dav_access
 dnf install mod_dav_access
 ```
 
+Ubuntu packages are available through
+[PPA](https://launchpad.net/~minfrin/+archive/ubuntu/apache2/).
+
 # quick configuration
 
     <Location /principal>

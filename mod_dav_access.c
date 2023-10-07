@@ -43,12 +43,20 @@ module AP_MODULE_DECLARE_DATA dav_access_module;
 
 typedef struct
 {
-    int principal_url_set :1;
+    unsigned int dav_access_set :1;
+    unsigned int dav_access_principal_set :1;
+    unsigned int priviledge_set :1;
+    unsigned int principal_url_set :1;
     ap_expr_info_t *principal_url;
+    const char *priviledge;
+    int dav_access;
+    int dav_access_principal;
 } dav_access_config_rec;
 
 /* forward-declare the hook structures */
 static const dav_hooks_liveprop dav_hooks_liveprop_access;
+
+#define DAV_XML_NAMESPACE "DAV:"
 
 /*
 ** The namespace URIs that we use. This list and the enumeration must
@@ -56,7 +64,7 @@ static const dav_hooks_liveprop dav_hooks_liveprop_access;
 */
 static const char * const dav_access_namespace_uris[] =
 {
-    "DAV:",
+    DAV_XML_NAMESPACE,
 
     NULL        /* sentinel */
 };
@@ -82,7 +90,7 @@ enum {
 
 static const dav_liveprop_spec dav_access_props[] =
 {
-    /* standard calendar properties */
+    /* standard acl properties */
     {
         DAV_ACCESS_URI_DAV,
         "acl",
@@ -97,7 +105,7 @@ static const dav_liveprop_spec dav_access_props[] =
     },
     {
         DAV_ACCESS_URI_DAV,
-        "alternate-uri-set",
+        "alternate-URI-set",
         DAV_ACCESS_PROPID_alternate_uri_set,
         0
     },
@@ -151,7 +159,7 @@ static const dav_liveprop_spec dav_access_props[] =
     },
     {
         DAV_ACCESS_URI_DAV,
-        "principal-url",
+        "principal-URL",
         DAV_ACCESS_PROPID_principal_url,
         0
     },
@@ -196,12 +204,20 @@ static const char *dav_access_principal(request_rec *r)
 
 static const char *dav_access_current_user_privilege_set(const dav_resource *resource)
 {
-    /* for now, people are allowed */
-    return "<D:privilege><D:read/></D:privilege><D:privilege><D:write/></D:privilege><D:privilege><D:bind/></D:privilege><D:privilege><D:unbind/></D:privilege>";
+    request_rec *r = resource->hooks->get_request_rec(resource);
 
+    dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
+                                                &dav_access_module);
+
+    /* for now, people are allowed */
+    if (conf->priviledge) {
+        return "<D:privilege><D:read/></D:privilege><D:privilege><D:write/></D:privilege><D:privilege><D:bind/></D:privilege><D:privilege><D:unbind/></D:privilege>";
+    }
+
+    return NULL;
 }
 
-static const char *dav_access_resource_principal(const dav_resource *resource)
+static const char *dav_access_current_user_principal(const dav_resource *resource)
 {
     request_rec *r = resource->hooks->get_request_rec(resource);
 
@@ -218,9 +234,19 @@ static dav_prop_insert dav_access_insert_prop(const dav_resource *resource,
     int global_ns;
 
     switch (propid) {
+    case DAV_ACCESS_PROPID_principal_url:
+
+        value = dav_access_current_user_principal(resource);
+        if (value)
+            value = apr_psprintf(p, "<D:href>%s</D:href>",
+                    apr_pescape_entity(p, value, 1));
+        else
+            return DAV_PROP_INSERT_NOTDEF;
+        break;
+
     case DAV_ACCESS_PROPID_current_user_principal:
 
-        value = dav_access_resource_principal(resource);
+        value = dav_access_current_user_principal(resource);
         if (value)
             value = apr_psprintf(p, "<D:href>%s</D:href>",
                     apr_pescape_entity(p, value, 1));
@@ -231,6 +257,9 @@ static dav_prop_insert dav_access_insert_prop(const dav_resource *resource,
     case DAV_ACCESS_PROPID_current_user_privilege_set:
 
         value = dav_access_current_user_privilege_set(resource);
+        if (!value) {
+            return DAV_PROP_INSERT_NOTDEF;
+        }
         break;
 
     default:
@@ -326,7 +355,7 @@ static dav_error *dav_access_options_header(request_rec *r,
     dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
             &dav_access_module);
 
-    if (conf && conf->principal_url) {
+    if (conf && conf->dav_access) {
         apr_text_append(r->pool, phdr, "access-control");
     }
 
@@ -339,7 +368,7 @@ static dav_error *dav_access_options_method(request_rec *r,
     dav_access_config_rec *conf = ap_get_module_config(r->per_dir_config,
             &dav_access_module);
 
-    if (conf && conf->principal_url) {
+    if (conf && conf->dav_access) {
         // apr_text_append(r->pool, phdr, "ACL");
         // apr_text_append(r->pool, phdr, "REPORT");
     }
@@ -352,6 +381,42 @@ static dav_options_provider options =
     dav_access_options_header,
     dav_access_options_method,
     NULL
+};
+
+static int dav_access_get_resource_type(const dav_resource *resource,
+                                        const char **type, const char **uri)
+{
+    request_rec *r;
+    dav_access_config_rec *conf;
+
+    int result = DECLINED;
+
+    *type = *uri = NULL;
+
+    if (resource && resource->hooks && resource->hooks->get_request_rec) {
+        r = resource->hooks->get_request_rec(resource);
+    }
+    else {
+        return result;
+    }
+
+    conf = ap_get_module_config(r->per_dir_config,
+            &dav_access_module);
+
+    if (conf->dav_access_principal) {
+
+        *type = "principal";
+        *uri = DAV_XML_NAMESPACE;
+
+        result = OK;
+    }
+
+    return result;
+}
+
+static dav_resource_type_provider resource_types =
+{
+    dav_access_get_resource_type
 };
 
 static void *create_dav_access_dir_config(apr_pool_t *p, char *d)
@@ -368,10 +433,39 @@ static void *merge_dav_access_dir_config(apr_pool_t *p, void *basev, void *addv)
     dav_access_config_rec *add = (dav_access_config_rec *) addv;
     dav_access_config_rec *base = (dav_access_config_rec *) basev;
 
+    new->dav_access = (add->dav_access_set == 0) ? base->dav_access : add->dav_access;
+    new->dav_access_set = add->dav_access_set || base->dav_access_set;
+
+    new->dav_access_principal = (add->dav_access_principal_set == 0) ? base->dav_access_principal : add->dav_access_principal;
+    new->dav_access_principal_set = add->dav_access_principal_set || base->dav_access_principal_set;
+
     new->principal_url = (add->principal_url_set == 0) ? base->principal_url : add->principal_url;
     new->principal_url_set = add->principal_url_set || base->principal_url_set;
 
+    new->priviledge = (add->priviledge_set == 0) ? base->priviledge : add->priviledge;
+    new->priviledge_set = add->priviledge_set || base->priviledge_set;
+
     return new;
+}
+
+static const char *set_dav_access(cmd_parms *cmd, void *dconf, int flag)
+{
+    dav_access_config_rec *conf = dconf;
+
+    conf->dav_access = flag;
+    conf->dav_access_set = 1;
+
+    return NULL;
+}
+
+static const char *set_dav_access_principal(cmd_parms *cmd, void *dconf, int flag)
+{
+    dav_access_config_rec *conf = dconf;
+
+    conf->dav_access_principal = flag;
+    conf->dav_access_principal_set = 1;
+
+    return NULL;
 }
 
 static const char *set_dav_principal_url(cmd_parms *cmd, void *dconf, const char *url)
@@ -393,8 +487,39 @@ static const char *set_dav_principal_url(cmd_parms *cmd, void *dconf, const char
     return NULL;
 }
 
+static const char *set_dav_access_priviledge(cmd_parms *cmd, void *dconf, const char *namespace)
+{
+    dav_access_config_rec *conf = dconf;
+
+    /*
+     * In future we plan to support "DavAccessPriviledge namespace +priviledge1 ..."
+     *
+     * For now, support a future compatible shortcut "DavAccessPriviledge all".
+     */
+    if (!strcmp(namespace, "all")) {
+        conf->priviledge = "<D:privilege><D:read/></D:privilege><D:privilege><D:write/></D:privilege><D:privilege><D:bind/></D:privilege><D:privilege><D:unbind/></D:privilege>";
+    }
+    else {
+        return apr_pstrcat(cmd->temp_pool,
+                "DavAccessPriviledge must be set to 'all': '", namespace, NULL);
+    }
+
+    conf->priviledge_set = 1;
+
+    return NULL;
+}
+
 static const command_rec dav_access_cmds[] =
 {
+    AP_INIT_FLAG("DavAccess",
+        set_dav_access, NULL, RSRC_CONF | ACCESS_CONF,
+        "When enabled, the URL space will declared to support the option 'access-control'."),
+    AP_INIT_FLAG("DavAccessPrincipal",
+        set_dav_access_principal, NULL, RSRC_CONF | ACCESS_CONF,
+        "When enabled, the URL space will declared to contain resourcetype 'principal'."),
+    AP_INIT_TAKE1("DavAccessPriviledge",
+        set_dav_access_priviledge, NULL, RSRC_CONF | ACCESS_CONF,
+        "When enabled, the URL space will declared to contain resourcetype 'principal'."),
     AP_INIT_TAKE1("DavAccessPrincipalUrl", set_dav_principal_url, NULL, RSRC_CONF | ACCESS_CONF,
         "Set the URL template to use for the principal URL. Recommended value is \"/principals/%{escape:%{REMOTE_USER}}\"."),
     { NULL }
@@ -413,6 +538,7 @@ static void register_hooks(apr_pool_t *p)
     dav_register_liveprop_group(p, &dav_access_liveprop_group);
 
     dav_options_provider_register(p, "dav_access", &options);
+    dav_resource_type_provider_register(p, "dav_access", &resource_types);
 
     dav_hook_find_liveprop(dav_access_find_liveprop, NULL, NULL, APR_HOOK_MIDDLE);
 

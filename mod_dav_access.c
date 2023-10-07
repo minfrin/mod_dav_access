@@ -519,7 +519,7 @@ static const command_rec dav_access_cmds[] =
         "When enabled, the URL space will declared to contain resourcetype 'principal'."),
     AP_INIT_TAKE1("DavAccessPriviledge",
         set_dav_access_priviledge, NULL, RSRC_CONF | ACCESS_CONF,
-        "When enabled, the URL space will declared to contain resourcetype 'principal'."),
+        "When set to 'all', the URL space will allow all DAV priviledges."),
     AP_INIT_TAKE1("DavAccessPrincipalUrl", set_dav_principal_url, NULL, RSRC_CONF | ACCESS_CONF,
         "Set the URL template to use for the principal URL. Recommended value is \"/principals/%{escape:%{REMOTE_USER}}\"."),
     { NULL }

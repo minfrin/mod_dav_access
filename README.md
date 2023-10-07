@@ -25,22 +25,34 @@ Ubuntu packages are available through
 
     <Location /principal>
 
+      Dav on
+      DavAccess on
+      DavCalendar on
+      DavAccessPrincipal on
+
       # limit to logged in users
       AuthType basic
       require valid-user
 
-      # configration needed at the principal URL space
+      # configuration needed at the principal URL space
     </Location>
 
     Alias /calendar /home/calendar
     <Directory /home/calendar>
       Dav on
+      DavAccess on
+      DavCalendar on
 
       # limit to logged in users
       AuthType basic
       require valid-user
 
+      DavAccessPriviledge all
       DavAccessPrincipalUrl /principal/%{escape:%{REMOTE_USER}}
+
+      DavCalendarHome /calendar/%{escape:%{REMOTE_USER}}/
+      DavCalendarProvision /calendar/%{escape:%{REMOTE_USER}}/ %{REMOTE_USER}
+      DavCalendarTimezone UTC
     </Directory>
 
 # configuration in more detail
@@ -63,11 +75,19 @@ this:
 
 ## specify permissions on a collection
 
-In the present form, this module advertises that all permissions have been
-granted to the URL space. Is it left to standard Apache httpd configuration
-to limit access as normal.
+This module advertises that all permissions have been granted to the URL
+space by adding this directive. Is it left to standard Apache httpd
+configuration to limit access as normal.
+
+    DavAccessPriviledge all
 
 # configuration directives
+
+The *DavAccess* directive causes "access-control" to be added to the
+OPTIONS. This is required on all principal and calendar URL spaces.
+
+The *DavAccessPrincipal* directive adds the "principal" resourcetype
+to all resources in the URL space.
 
 The *DavAccessPrincipalUrl* directive defines an expression that resolves
 to the path of the principal URL. A recommended value is

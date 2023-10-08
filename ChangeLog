@@ -1,4 +1,10 @@
 
+Changes with v0.2.0
+
+ *) Add explicit control over the URL space with DavAccess,
+    DavAccessPrincipal and DavAccessPriviledge. [Graham
+    Leggett]
+
 Changes with v0.1.0
 
  *) Initial import of mod_dav_access. [Graham Leggett]

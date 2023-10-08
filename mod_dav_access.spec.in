@@ -33,6 +33,8 @@ Apache module to implement RFC3744 WebDav Access Control Protocol.
 %doc AUTHORS ChangeLog README.md
 
 %changelog
+* Sun Oct 08 2023 Graham Leggett <minfrin@sharp.fm> - 0.2.0-1
+- Explicit control over the principal URL space
 * Mon Feb 14 2022 Graham Leggett <minfrin@sharp.fm> - 0.1.0-1
 - Initial version of the package
 

@@ -23,37 +23,72 @@ Ubuntu packages are available through
 
 # quick configuration
 
-    <Location /principal>
+The configuration below gives the logged in user their own calandar
+space.
+
+    <IfModule !alias_module>
+      LoadModule alias_module modules/mod_alias.so
+    </IfModule>
+    <IfModule !authz_core_module>
+      LoadModule authz_core_module modules/mod_authz_core.so
+    </IfModule>
+    <IfModule !autoindex_module>
+      LoadModule autoindex_module modules/mod_autoindex.so
+    </IfModule>
+    <IfModule !dav_module>
+      LoadModule dav_module modules/mod_dav.so
+    </IfModule>
+    <IfModule !dav_fs_module>
+      LoadModule dav_fs_module modules/mod_dav_fs.so
+    </IfModule>
+    <IfModule !dir_module>
+      LoadModule dir_module modules/mod_dir.so
+    </IfModule>
+    <IfModule !setenvif_module>
+     LoadModule setenvif_module modules/mod_setenvif.so
+    </IfModule>
+
+    Redirect /.well-known/caldav /calendar/
+
+    <Location /calendar>
+      Alias /var/www/dav/calendar/
+      AliasPreservePath on
 
       Dav on
       DavAccess on
       DavCalendar on
-      DavAccessPrincipal on
-
-      # limit to logged in users
-      AuthType basic
-      require valid-user
-
-      # configuration needed at the principal URL space
-    </Location>
-
-    Alias /calendar /home/calendar
-    <Directory /home/calendar>
-      Dav on
-      DavAccess on
-      DavCalendar on
-
-      # limit to logged in users
-      AuthType basic
-      require valid-user
+      Options +Indexes
 
       DavAccessPriviledge all
-      DavAccessPrincipalUrl /principal/%{escape:%{REMOTE_USER}}
-
-      DavCalendarHome /calendar/%{escape:%{REMOTE_USER}}/
-      DavCalendarProvision /calendar/%{escape:%{REMOTE_USER}}/ %{REMOTE_USER}
+      DavAccessPrincipalUrl /calendar/principals/%{escape:%{REMOTE_USER}}/
+      DavCalendarHome /calendar/calendars/%{escape:%{REMOTE_USER}}/
+      DavCalendarProvision /calendar/calendars/%{escape:%{REMOTE_USER}}/ %{REMOTE_USER}
       DavCalendarTimezone UTC
-    </Directory>
+
+      IndexOptions FancyIndexing HTMLTable VersionSort XHTML
+      DirectoryIndex disabled
+      FileETag INode MTime Size
+
+      # limit to logged in users
+      AuthType basic
+
+      SetEnvIf REQUEST_URI "^/calendar/calendars/([^/]+)" MATCH_USER=$1
+
+      <RequireAll>
+        require valid-user
+        require expr %{env:MATCH_USER} == '' || %{unescape:%{env:MATCH_USER}} == %{REMOTE_USER}
+      </RequireAll>
+
+    </Location>
+
+    <Location /calendar/principals>
+
+      Alias /var/www/dav/calendar/principals
+      AliasPreservePath off
+
+      DavAccessPrincipal on
+
+    </Location>
 
 # configuration in more detail
 
@@ -70,21 +105,39 @@ this:
 
     Alias /calendar /home/calendar
     <Directory /home/calendar>
-      DavAccessPrincipalUrl /principal/%{escape:%{REMOTE_USER}}
+      DavAccessPrincipalUrl /calendar/principals/%{escape:%{REMOTE_USER}}/
     </Directory>
+
+## declare the principal URL space
+
+You may choose to create concrete collections (directories) representing
+each principal user, but that can be avoided by mapping every principal
+to the same directory, and then adding relevant properties to the url
+space. This is useful when all users have the same permissions.
+
+    <Location /calendar/principals>
+
+      # this directory must exist
+      Alias /var/www/dav/calendar/principals
+      # map every path underneath /calendar/principals to the above directory
+      AliasPreservePath off
+      # every collection in the URL space will have the DAV:principal resourcetype
+      DavAccessPrincipal on
+
+    </Location>
 
 ## specify permissions on a collection
 
-This module advertises that all permissions have been granted to the URL
-space by adding this directive. Is it left to standard Apache httpd
-configuration to limit access as normal.
+Grant all permissions to the URL space by adding this directive. Is it
+left to standard Apache httpd configuration to limit access as normal.
 
     DavAccessPriviledge all
 
 # configuration directives
 
 The *DavAccess* directive causes "access-control" to be added to the
-OPTIONS. This is required on all principal and calendar URL spaces.
+OPTIONS. This is required by most clients on all principal and calendar
+URL spaces.
 
 The *DavAccessPrincipal* directive adds the "principal" resourcetype
 to all resources in the URL space.
